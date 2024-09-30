@@ -12,13 +12,15 @@ export function convertToEmoji(countryCode) {
 };
 
 function Form() {
-    
+    const [isLoadingGeocoding, setIsLoadingGeocoding] = useState(false);
     const [lat, lng] = useUrlPosition();
     const [cityName, setCityName] = useState("");
     const [country, setCountry] = useState("");
     const [date, setDate] = useState(new Date());
     const [notes, setNotes] = useState("");
     const navigate = useNavigate();
+   const BASE_URL = 'http://localhost:9000';
+
 
     useEffect(() => {
         async function fetchCityData() {
@@ -28,6 +30,7 @@ function Form() {
                 const data = await res.json();
                 console.log(data);
             }catch(err) {
+                console.log(err);
             }finally {
                 setIsLoadingGeocoding(false);
             }
