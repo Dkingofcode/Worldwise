@@ -1,15 +1,31 @@
 import React from 'react';
 import cities from "../data/cities.json";
-import City from "../components/City";
+import City from "./City";
+import { useCities } from '../contexts/CitiesContext';
+import CityItem from "./CityItem";
+import Message from "./Message";
+import Spinner from "./Spinner";
+
 
 const CityList = () => {
+  const { cities, isLoading } = useCities();
+
+  if (isLoading) return <Spinner  />;
+
+  if(!cities.length) {
+    return (
+        <Message message="Add your first city by clicking a city on the map" />
+    );
+  }
+
+
   return (
-    <div>
+    <ul className={StyleSheet.CityList}>
       {cities.map((city) =>  (
-        <City key={city.id} city={city} />
+        <CityItem key={city.id} city={city} />
       ))}
-    </div>
-  )
+    </ul>
+  );
 }
 
 export default CityList;
