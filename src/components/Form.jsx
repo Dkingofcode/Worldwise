@@ -4,6 +4,12 @@ import Button from "./Button";
 import { useNavigate } from "react-router-dom";
 import { useUrlPosition } from "../hooks/useUrlPosition";
 import { useEffect } from "react";
+import Spinner from "./Spinner";
+import Message from "./Message";
+import { DatePicker } from "date-picker";
+import { useCities } from "../contexts/CitiesContext";
+
+
 
 
 export function convertToEmoji(countryCode) {
@@ -12,34 +18,79 @@ export function convertToEmoji(countryCode) {
 };
 
 function Form() {
+    const [geocodingError, setGeoCodingError] = useState("");
     const [isLoadingGeocoding, setIsLoadingGeocoding] = useState(false);
     const [lat, lng] = useUrlPosition();
     const [cityName, setCityName] = useState("");
     const [country, setCountry] = useState("");
     const [date, setDate] = useState(new Date());
     const [notes, setNotes] = useState("");
-    const navigate = useNavigate();
-   const BASE_URL = 'http://localhost:9000';
+    const [emoji, setEmoji] = useState("");
 
+    const navigate = useNavigate();
+    const BASE_URL = 'http://localhost:9000';
+
+    const { createCity } = useCities();
 
     useEffect(() => {
         async function fetchCityData() {
             try {
                 setIsLoadingGeocoding(true);
+                setGeoCodingError("");
                 const res = await fetch(`${BASE_URL}?latitude=${lat}&longitude=${lng}`);
                 const data = await res.json();
+                
+                if(!data.countryCode){
+                    throw new Error("Looks like you clicked an empty area, select another section");
+                }
+
                 console.log(data);
+                setCityName(data.city || data.locality || "");
+                setCountry(data.countryName);
+                setEmoji(convertToEmoji(data.countryCode));
             }catch(err) {
                 console.log(err);
+                setGeoCodingError(err.message);
             }finally {
                 setIsLoadingGeocoding(false);
             }
         }
         fetchCityData();
-    }, []);
+    }, [lat, lng]);
+
+    function handleSubmit(e) {
+        e.preventDefault();
+
+        if (!cityName || !date) return;
+
+    const newCity = { 
+        cityName, 
+        country, 
+        date, 
+        emoji, 
+        notes, 
+        position: { lat, lng }, 
+ };
+    
+    createCity(newCity);
+    navigate("/app/cities");
+    
+    };
+
+    if (isLoadingGeocoding)  return <Spinner />;
+
+    if (!lat && !lng) {
+        return <Message message="Start by clicking somewhere on the map"  />;    
+    }
+
+    if (geocodingError){
+        return <Message message={geocodingError} />;
+    }
+
+
 
     return (
-        <form className={styles.form}>
+        <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.row}>
               <label htmlFor="cityName">
                  City name
@@ -47,6 +98,20 @@ function Form() {
               <input id="cityName" 
               onChange={(e) => setCityName(e.target.value)} 
                value={cityName}
+              />
+              <span className={styles.flag}>{emoji}</span>
+            </div>
+
+            <div className={styles.row}>
+              <label htmlFor="date">
+                When did you go to {cityName}?
+              </label>
+
+              <DatePicker   
+                id="date"
+                onChange={(date) => setDate(date)}
+                selected={date}
+                dateFormat="dd/MM/yyyy"
               />
             </div>
 
